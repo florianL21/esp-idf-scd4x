@@ -1,2 +1,4 @@
-/scd4x_i2c_example_usage
-.idea
+build/
+.cache/
+compile_commands.json
+scd4x_i2c_example_usage
