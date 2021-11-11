@@ -1,4 +1,4 @@
-# Sensirion Embedded I2C SCD4x Driver
+# Sensirion Embedded I2C SCD4x Driver ported to esp-idf component (WIP)
 
 This is a generic embedded driver for the [Sensirion SCD4x Carbon Dioxide Sensor](https://www.sensirion.com/scd4x/).
 It enables developers to communicate with the SCD4x sensor on different hardware platforms by only adapting the I2C communication related source files.
@@ -7,68 +7,29 @@ It enables developers to communicate with the SCD4x sensor on different hardware
 
 # Getting started
 
-## Implement the I2C Interface
+## Add component to your esp-idf project
 
-So we need to adjust two files according to your platform.
-
-### Edit `sensirion_i2c_hal.c`
-
-This file contains the implementation of the sensor communication
-(how to send requests to the sensor). Therefore, how this is done depends on your
-hardware platform. Therefore we can only provide function stubs in which you
-can implement the logic yourself. 
-There are sample implementations available for some platforms: [`sample-implementations`](sample-implementations).
-If you are using a Linux based platform like Raspberry Pi
-you can just replace the unimplemented HAL template with the provided
-implementation in `sample-implementations/linux_user_space/`:
-
-```
-cp sample-implementations/linux_user_space/sensirion_i2c_hal.c ./
+To add the component to your esp-idf based project, first clone this repository, preferably into your project directory but somewhere else should also work. 
+```bash
+git clone git://github.com/timbuntu/esp-idf-scd4x.git
 ```
 
-### Edit `sensirion_config.h`
+Or add it as a submodule if you are also using git:
+```
+git submodule add git://github.com/timbuntu/esp-idf-scd4x.git
+```
 
-If you are on a Linux based platform you can skip this part since
-everything is already correctly setup for you.
+After cloning the repository, add the directory as extra component by adding the following line to the project cmake file, or append the directory to the line if it alrady exists (replace `esp-idf-scd4x` with the path to the cloned repo):
 
-Otherwise you need to check if the libraries `<stdint.h>` and
-`<stdlib.h>` are provided by your toolchain, compiler or system.
-If you have no idea on how to do that you can skip this
-step for now and come back when you get errors related to these names when 
-compiling the driver.
-The features we use out of those libraries are standard integer sizes
-from `<stdint.h>` and `NULL` from `<stdlib.h>`. If they are not available
-you need to specify the following integer types yourself:
+```cmake
+set(EXTRA_COMPONENT_DIRS "esp-idf-scd4x")
+```
 
-* `int64_t` = signed 64bit integer
-* `uint64_t` = unsigned 64bit integer
-* `int32_t` = signed 32bit integer
-* `uint32_t` = unsigned 32bit integer
-* `int16_t` = signed 16bit integer
-* `uint16_t` = unsigned 16bit integer
-* `int8_t` = signed 8bit integer
-* `uint8_t` = unsigned 8bit integer
+Finally add the `esp-idf-scd4x` component to your own component by adding it as a requirement in the component `CMakeLists.txt` `idf_component_register` call so that it looks something like this:
 
-In addition to that you will need to specify `NULL`.
-For both we have a detailed template where you just need to fill in
-your system specific values.
-
-Now we are ready to compile and run the example usage for your sensor.
-
-## Compile and Run
-
-Take the `.c` and `.h` files directly in this folder pass them to your 
-favorite C compiler and run the resulting binary.
-This step may vary, depending on your platform. Here we demonstrate the 
-procedure for Linux based platforms:
-
-1. Open up a terminal.
-2. Navigate to the directory where this README is located.
-3. Run `make` (this compiles all the code here to one binary).
-4. Run `./scd4x_i2c_example_usage` (This will run your newly compiled binary).
-5. Now you should see the first measurement values appear in your terminal.
-   As a next step you can adjust the example usage file or write your own
-   main function to use the sensor.
+```cmake
+idf_component_register(SRCS "src/main.c" INCLUDE_DIRS "include/" REQUIRES "esp-idf-scd4x")
+```
 
 # Background
 
