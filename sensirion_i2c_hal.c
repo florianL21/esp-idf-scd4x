@@ -30,16 +30,20 @@
  */
 
 #include "sensirion_i2c_hal.h"
+#include "esp_err.h"
+#include "hal/gpio_types.h"
+#include "hal/i2c_types.h"
 #include "sensirion_common.h"
 #include "sensirion_config.h"
+#include "driver/i2c.h"
+#include "freertos/FreeRTOS.h"
 
-/*
- * INSTRUCTIONS
- * ============
- *
- * Implement all functions where they are marked as IMPLEMENT.
- * Follow the function specification in the comments.
- */
+#define I2C_MASTER_TX_BUF_DISABLE 0
+#define I2C_MASTER_RX_BUF_DISABLE 0
+#define I2C_NO_ACK_CHECK 0
+#define I2C_ACK_CHECK 1
+#define I2C_ACK_VAL 0
+#define I2C_NACK_VAL 1
 
 /**
  * Select the current i2c bus by index.
@@ -52,9 +56,6 @@
  * @returns         0 on success, an error code otherwise
  */
 int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
-    /* TODO:IMPLEMENT or leave empty if all sensors are located on one single
-     * bus
-     */
     return NOT_IMPLEMENTED_ERROR;
 }
 
@@ -63,14 +64,24 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
  * communication.
  */
 void sensirion_i2c_hal_init(void) {
-    /* TODO:IMPLEMENT */
+    /* TODO: Handle returned esp_err_t*/
+    i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    i2c_config_t i2c_config = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = GPIO_SDA,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_io_num = GPIO_SCL,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = I2C_FREQ
+    };
+    i2c_param_config(I2C_PORT, &i2c_config);
 }
 
 /**
  * Release all resources initialized by sensirion_i2c_hal_init().
  */
 void sensirion_i2c_hal_free(void) {
-    /* TODO:IMPLEMENT or leave empty if no resources need to be freed */
+    i2c_driver_delete(I2C_PORT);
 }
 
 /**
@@ -84,8 +95,13 @@ void sensirion_i2c_hal_free(void) {
  * @returns 0 on success, error code otherwise
  */
 int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
-    /* TODO:IMPLEMENT */
-    return NOT_IMPLEMENTED_ERROR;
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_read(cmd, data, count, I2C_ACK_VAL);
+    i2c_master_stop(cmd);
+    esp_err_t err = i2c_master_cmd_begin(I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    return err;
 }
 
 /**
@@ -99,10 +115,14 @@ int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
  * @param count   number of bytes to read from the buffer and send over I2C
  * @returns 0 on success, error code otherwise
  */
-int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data,
-                               uint16_t count) {
-    /* TODO:IMPLEMENT */
-    return NOT_IMPLEMENTED_ERROR;
+int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data, uint16_t count) {
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write(cmd, data, count, I2C_ACK_CHECK);
+    i2c_master_stop(cmd);
+    esp_err_t err = i2c_master_cmd_begin(I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    return err;
 }
 
 /**
@@ -114,5 +134,6 @@ int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data,
  * @param useconds the sleep time in microseconds
  */
 void sensirion_i2c_hal_sleep_usec(uint32_t useconds) {
-    /* TODO:IMPLEMENT */
+    /* TODO: Check if this actually works */
+    vTaskDelay((useconds/1000) / portTICK_RATE_MS);
 }
