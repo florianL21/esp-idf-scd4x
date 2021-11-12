@@ -1,4 +1,4 @@
-# Sensirion Embedded I2C SCD4x Driver ported to esp-idf component (WIP)
+# Sensirion Embedded I2C SCD4x Driver ported to esp-idf component
 
 This is a generic embedded driver for the [Sensirion SCD4x Carbon Dioxide Sensor](https://www.sensirion.com/scd4x/).
 It enables developers to communicate with the SCD4x sensor on different hardware platforms by only adapting the I2C communication related source files.
