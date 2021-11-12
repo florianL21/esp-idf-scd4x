@@ -63,9 +63,9 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
  * Initialize all hard- and software components that are needed for the I2C
  * communication.
  */
-void sensirion_i2c_hal_init(void) {
+int16_t sensirion_i2c_hal_init(void) {
     /* TODO: Handle returned esp_err_t*/
-    i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    int16_t err = 0;
     i2c_config_t i2c_config = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = GPIO_SDA,
@@ -74,14 +74,16 @@ void sensirion_i2c_hal_init(void) {
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = I2C_FREQ
     };
-    i2c_param_config(I2C_PORT, &i2c_config);
+    err = i2c_param_config(I2C_PORT, &i2c_config);
+    if(err) return err;
+    return i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 }
 
 /**
  * Release all resources initialized by sensirion_i2c_hal_init().
  */
-void sensirion_i2c_hal_free(void) {
-    i2c_driver_delete(I2C_PORT);
+int16_t sensirion_i2c_hal_free(void) {
+    return i2c_driver_delete(I2C_PORT);
 }
 
 /**
@@ -94,14 +96,8 @@ void sensirion_i2c_hal_free(void) {
  * @param count   number of bytes to read from I2C and store in the buffer
  * @returns 0 on success, error code otherwise
  */
-int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_read(cmd, data, count, I2C_ACK_VAL);
-    i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    return err;
+int16_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
+    return i2c_master_read_from_device(I2C_PORT, address, data, count, 1000 / portTICK_RATE_MS);
 }
 
 /**
@@ -115,14 +111,8 @@ int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
  * @param count   number of bytes to read from the buffer and send over I2C
  * @returns 0 on success, error code otherwise
  */
-int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data, uint16_t count) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write(cmd, data, count, I2C_ACK_CHECK);
-    i2c_master_stop(cmd);
-    esp_err_t err = i2c_master_cmd_begin(I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    return err;
+int16_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data, uint16_t count) {
+    return i2c_master_write_to_device(I2C_PORT, address, data, count, 1000 / portTICK_RATE_MS);
 }
 
 /**
@@ -135,5 +125,9 @@ int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data, uint16_t co
  */
 void sensirion_i2c_hal_sleep_usec(uint32_t useconds) {
     /* TODO: Check if this actually works */
-    vTaskDelay((useconds/1000) / portTICK_RATE_MS);
+    uint32_t msec = useconds / 1000;
+    if (useconds % 1000 > 0) {
+        msec++;
+    }
+    vTaskDelay(msec / portTICK_RATE_MS);
 }
