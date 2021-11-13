@@ -30,6 +30,10 @@ Finally add the `esp-idf-scd4x` component to your own component by adding it as 
 idf_component_register(SRCS "src/main.c" INCLUDE_DIRS "include/" REQUIRES "esp-idf-scd4x")
 ```
 
+## Configuration
+
+You can configure the GPIOs, i2c port and clock speed to use in the [sensirion_config.h](sensirion_config.h) file.
+
 # Background
 
 ## Files
