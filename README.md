@@ -1,7 +1,6 @@
 # Sensirion Embedded I2C SCD4x Driver ported to esp-idf component
 
-This is a generic embedded driver for the [Sensirion SCD4x Carbon Dioxide Sensor](https://www.sensirion.com/scd4x/).
-It enables developers to communicate with the SCD4x sensor on different hardware platforms by only adapting the I2C communication related source files.
+This is the generic embedded driver for the [Sensirion SCD4x Carbon Dioxide Sensor](https://www.sensirion.com/scd4x/) ported to an esp-idf component for use with the esp32 familiy of microcontrollers.
 
 [<center><img src="images/SCD4x.png" width="300px"></center>](https://sensirion.com/my-scd-ek)
 
@@ -48,14 +47,14 @@ correct formatted frame for your sensor.
 
 In these files you can find the implementation of the hardware abstraction layer used
 by Sensirion's I2C embedded drivers. This part of the code is specific to the underlying
-hardware platform. This is an unimplemented template for the user to implement.
+hardware platform. This is implemented using the esp-edf i2c driver component.
 In the `sample-implementations/` folder we provide implementations for the most common
 platforms.
 
 ### sensirion\_config.h
 
 In this file we keep all the included libraries for our drivers and global defines.
-Next to `sensirion_i2c_hal.c` *it's the only file you should need to edit to get your
+Next to `sensirion_i2c_hal.c` *it's the only file that needed to be edited to get the
 driver working.*
 
 ### sensirion\_common.[ch]
