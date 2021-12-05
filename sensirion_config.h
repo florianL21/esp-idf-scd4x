@@ -32,8 +32,6 @@
 #ifndef SENSIRION_CONFIG_H
 #define SENSIRION_CONFIG_H
 
-#define GPIO_SDA 18
-#define GPIO_SCL 19
 #define I2C_FREQ 100000
 #define I2C_PORT I2C_NUM_0
 

@@ -63,14 +63,14 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
  * Initialize all hard- and software components that are needed for the I2C
  * communication.
  */
-int16_t sensirion_i2c_hal_init(void) {
+int16_t sensirion_i2c_hal_init(int gpio_sda, int gpio_scl) {
     /* TODO: Handle returned esp_err_t*/
     int16_t err = 0;
     i2c_config_t i2c_config = {
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = GPIO_SDA,
+        .sda_io_num = gpio_sda,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = GPIO_SCL,
+        .scl_io_num = gpio_scl,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = I2C_FREQ
     };
