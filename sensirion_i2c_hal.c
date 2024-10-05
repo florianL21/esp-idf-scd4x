@@ -35,7 +35,7 @@
 #include "hal/i2c_types.h"
 #include "sensirion_common.h"
 #include "sensirion_config.h"
-#include "driver/i2c.h"
+#include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
 
 #define I2C_MASTER_TX_BUF_DISABLE 0
@@ -44,6 +44,9 @@
 #define I2C_ACK_CHECK 1
 #define I2C_ACK_VAL 0
 #define I2C_NACK_VAL 1
+
+static i2c_master_bus_handle_t* bus_handle = NULL;
+static i2c_master_dev_handle_t* dev_handle = NULL;
 
 /**
  * Select the current i2c bus by index.
@@ -64,26 +67,52 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
  * communication.
  */
 int16_t sensirion_i2c_hal_init(int gpio_sda, int gpio_scl) {
-    /* TODO: Handle returned esp_err_t*/
-    int16_t err = 0;
-    i2c_config_t i2c_config = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = gpio_sda,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+    bus_handle = calloc(1, sizeof(i2c_master_bus_handle_t));
+    if(bus_handle == NULL) {
+        ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
+    }
+    i2c_master_bus_config_t i2c_mst_config = {
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .i2c_port = I2C_PORT,
         .scl_io_num = gpio_scl,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = I2C_FREQ
+        .sda_io_num = gpio_sda,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
     };
-    err = i2c_param_config(I2C_PORT, &i2c_config);
-    if(err) return err;
-    return i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_mst_config, bus_handle));
+    return 0;
+}
+
+static i2c_master_dev_handle_t* get_i2c_device_handle(uint8_t address) {
+    if(dev_handle==NULL) {
+        dev_handle = calloc(1, sizeof(i2c_master_dev_handle_t));
+        if(dev_handle == NULL) {
+            ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
+        }
+        i2c_device_config_t dev_cfg = {
+            .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+            .device_address = address,
+            .scl_speed_hz = I2C_FREQ,
+        };
+
+        ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_cfg, dev_handle));
+    }
+    return dev_handle;
 }
 
 /**
  * Release all resources initialized by sensirion_i2c_hal_init().
  */
 int16_t sensirion_i2c_hal_free(void) {
-    return i2c_driver_delete(I2C_PORT);
+    if(dev_handle != NULL){
+        ESP_ERROR_CHECK(i2c_master_bus_rm_device(*dev_handle));
+        dev_handle = NULL;
+    }
+    if(bus_handle != NULL){
+        ESP_ERROR_CHECK(i2c_master_bus_reset(*bus_handle));
+        bus_handle = NULL;
+    }
+    return 0;
 }
 
 /**
@@ -97,7 +126,7 @@ int16_t sensirion_i2c_hal_free(void) {
  * @returns 0 on success, error code otherwise
  */
 int16_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
-    return i2c_master_read_from_device(I2C_PORT, address, data, count, 1000 / portTICK_RATE_MS);
+    return i2c_master_receive(*get_i2c_device_handle(address), data, count, 1000);
 }
 
 /**
@@ -112,7 +141,7 @@ int16_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
  * @returns 0 on success, error code otherwise
  */
 int16_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data, uint16_t count) {
-    return i2c_master_write_to_device(I2C_PORT, address, data, count, 1000 / portTICK_RATE_MS);
+    return i2c_master_transmit(*get_i2c_device_handle(address), data, count, 1000);
 }
 
 /**
@@ -129,5 +158,5 @@ void sensirion_i2c_hal_sleep_usec(uint32_t useconds) {
     if (useconds % 1000 > 0) {
         msec++;
     }
-    vTaskDelay(msec / portTICK_RATE_MS);
+    vTaskDelay(msec / portTICK_PERIOD_MS);
 }

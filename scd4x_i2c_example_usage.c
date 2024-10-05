@@ -40,10 +40,13 @@
  */
 //#define printf(...)
 
+#define SDC4X_SDA_PIN 22
+#define SDC4X_SCL_PIN 23
+
 int main(void) {
     int16_t error = 0;
 
-    sensirion_i2c_hal_init();
+    sensirion_i2c_hal_init(SDC4X_SDA_PIN, SDC4X_SCL_PIN);
 
     // Clean up potential SCD40 states
     scd4x_wake_up();
