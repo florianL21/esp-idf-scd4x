@@ -37,6 +37,7 @@
 #include "sensirion_config.h"
 #include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
+#include "esp_check.h"
 
 #define I2C_MASTER_TX_BUF_DISABLE 0
 #define I2C_MASTER_RX_BUF_DISABLE 0
@@ -44,6 +45,8 @@
 #define I2C_ACK_CHECK 1
 #define I2C_ACK_VAL 0
 #define I2C_NACK_VAL 1
+
+static const char *TAG = "sensirion_i2c_hal";
 
 static i2c_master_bus_handle_t* bus_handle = NULL;
 static i2c_master_dev_handle_t* dev_handle = NULL;
@@ -69,7 +72,7 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
 int16_t sensirion_i2c_hal_init(int gpio_sda, int gpio_scl) {
     bus_handle = calloc(1, sizeof(i2c_master_bus_handle_t));
     if(bus_handle == NULL) {
-        ESP_ERROR_CHECK(ESP_ERR_NO_MEM);
+        ESP_RETURN_ON_ERROR(ESP_ERR_NO_MEM, TAG, "Failed to allocate memory for I2C bus handle");
     }
     i2c_master_bus_config_t i2c_mst_config = {
         .clk_source = I2C_CLK_SRC_DEFAULT,
@@ -79,8 +82,8 @@ int16_t sensirion_i2c_hal_init(int gpio_sda, int gpio_scl) {
         .glitch_ignore_cnt = 7,
         .flags.enable_internal_pullup = true,
     };
-    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_mst_config, bus_handle));
-    return 0;
+    ESP_RETURN_ON_ERROR(i2c_new_master_bus(&i2c_mst_config, bus_handle), TAG, "Failed to initialize I2C bus");
+    return ESP_OK;
 }
 
 static i2c_master_dev_handle_t* get_i2c_device_handle(uint8_t address) {
@@ -105,14 +108,14 @@ static i2c_master_dev_handle_t* get_i2c_device_handle(uint8_t address) {
  */
 int16_t sensirion_i2c_hal_free(void) {
     if(dev_handle != NULL){
-        ESP_ERROR_CHECK(i2c_master_bus_rm_device(*dev_handle));
+        ESP_RETURN_ON_ERROR(i2c_master_bus_rm_device(*dev_handle), TAG, "Failed to remove device from I2C bus");
         dev_handle = NULL;
     }
     if(bus_handle != NULL){
-        ESP_ERROR_CHECK(i2c_master_bus_reset(*bus_handle));
+        ESP_RETURN_ON_ERROR(i2c_master_bus_reset(*bus_handle), TAG, "Failed to reset I2C bus");
         bus_handle = NULL;
     }
-    return 0;
+    return ESP_OK;
 }
 
 /**
