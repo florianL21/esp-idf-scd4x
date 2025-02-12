@@ -1,0 +1,17 @@
+{
+    "$schema": "https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/schema/library.json",
+    "name": "Sensirion-SCD4x",
+    "version": "1.0.0",
+    "repository":
+    {
+        "type": "git",
+        "url": "https://github.com/florianL21/esp-idf-scd4x.git"
+    },
+    "platforms": ["espressif32"],
+    "headers": ["scd4x_i2c.h", "sensirion_i2c_hal.h"],
+    "build": {
+        "srcDir": ".",
+        "includeDir": ".",
+        "srcFilter": "-<tests> -<sample-implementations> +<*.c>"
+    }
+}
